@@ -19,6 +19,7 @@
           <br>
           <Button type="text" v-if="this.$route.query.status === 1" @click.native="_RollBack()">查看回滚语句</Button>
           <Button type="text" v-else-if="this.$route.query.status === 0 && this.$route.query.type === 1" @click.native="PutData()">重新提交</Button>
+          <Button type="text" v-if="this.$route.query.status === 2" @click.native="delorder()">工单撤销</Button>
           <Button type="text"  @click.native="$router.go(-1)">返回</Button>
         </p>
         <Row>
@@ -103,6 +104,11 @@ export default {
           title: '影响行数',
           key: 'affectrow',
           width: 100
+        },
+        {
+          title: '执行时间/秒',
+          key: 'execute_time',
+          width: 200
         }
       ],
       TableDataNew: [],
@@ -131,6 +137,7 @@ export default {
         axios.post(`${util.url}/detail/`, {'opid': JSON.stringify(opid), 'id': this.$route.query.id})
         .then(res => {
           this.formItem = res.data.data
+          this.formItem.backup = '0'
           this.ddlsql = res.data.sql
           this.sqltype = res.data.type
           this.reloadsql = true
@@ -138,7 +145,7 @@ export default {
         .catch(() => {
           this.$Notice.error({
             title: '警告',
-            desc: 'Inception连接失败,请检查Inception是否已启动'
+            desc: '无法获得相关回滚数据,请确认备份库配置正确及备份规则'
           })
         })
       } else {
@@ -194,6 +201,23 @@ export default {
             util.ajanxerrorcode(this, error)
           })
       }
+    },
+    delorder () {
+      let _list = []
+      _list.push({'status': this.$route.query.status, 'id': this.$route.query.id})
+      axios.post(`${util.url}/undoOrder`, {
+        'id': JSON.stringify(_list)
+      })
+        .then(res => {
+          this.$Notice.info({
+            title: '信息',
+            desc: res.data
+          })
+          this.$router.go(-1)
+        })
+        .catch(error => {
+          util.ajanxerrorcode(this, error)
+        })
     }
   },
   mounted () {
@@ -201,7 +225,6 @@ export default {
      .then(res => {
        this.TableDataNew = res.data.data
        this.dmlorddl = res.data.type
-       console.log(res.data)
      })
      .catch(error => {
        this.$Notice.error({

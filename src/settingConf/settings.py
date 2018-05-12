@@ -27,6 +27,7 @@ SECRET_KEY = 'u)zall!ag&mci+ja5u&-6*1e^ufyu)l4i8+^=mw$845@k!ie+3.txt'
 DEBUG = True
 
 ALLOWED_HOSTS = [str(CONF_DATA.ipaddress).split(':')[0]]
+# ALLOWED_HOSTS = ['*']
 
 # Application definition
 AUTH_USER_MODEL = 'core.Account'
@@ -45,13 +46,14 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware'
 ]
-
+# CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = (
     CONF_DATA.ipaddress
 )
 
 CSRF_TRUSTED_ORIGINS = (
-    CONF_DATA.ipaddress
+    CONF_DATA.ipaddress,
+    '127.0.0.1:8080'
 )
 
 CORS_ALLOW_METHODS = (
@@ -74,7 +76,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': CONF_DATA.db,
         'USER': CONF_DATA.username,
-        "POST": CONF_DATA.port,
+        "PORT": CONF_DATA.port,
         "PASSWORD": CONF_DATA.password,
         "HOST": CONF_DATA.address
     }

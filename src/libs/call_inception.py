@@ -40,7 +40,7 @@ class Inception(object):
             InceptionSQL = '''
              /*--user=%s;--password=%s;--host=%s;--port=%s;%s;%s;*/ \
              inception_magic_start;\
-             use %s;\
+             use `%s`;\
              %s; \
              inception_magic_commit;
             ''' % (self.__dict__.get('user'),
@@ -54,18 +54,20 @@ class Inception(object):
             return InceptionSQL
         else:
             InceptionSQL = '''
-                        /*--user=%s;--password=%s;--host=%s;--port=3306;%s;*/ \
+                        /*--user=%s;--password=%s;--host=%s;--port=%s;%s;*/ \
                         inception_magic_start;\
-                        use %s;\
+                        use `%s`;\
                         %s; \
                         inception_magic_commit;
                        ''' % (self.__dict__.get('user'),
                               self.__dict__.get('password'),
                               self.__dict__.get('host'),
+                              self.__dict__.get('port'),
                               Type,
                               self.__dict__.get('db'),
                               Sql)
             return InceptionSQL
+
     def Execute(self, sql, backup: int):
         if backup == 1:
             Inceptionsql = self.GenerateStatements(Sql=sql, Type='--enable-execute')
@@ -87,7 +89,9 @@ class Inception(object):
                     'sql': row[5],
                     'affected_rows': row[6],
                     'sequence': row[7],
-                    'backup_dbname': row[8]
+                    'backup_dbname': row[8],
+                    'execute_time': row[9],
+                    'SQLSHA1': row[10]
                 } 
                 for row in result
             ]
@@ -106,11 +110,19 @@ class Inception(object):
                     'stagestatus': row[3],
                     'errormessage': row[4], 
                     'sql': row[5], 
-                    'affected_rows': row[6]
+                    'affected_rows': row[6],
+                    'SQLSHA1': row[10]
                 } 
                 for row in result 
             ]
         return Dataset
+
+    def oscstep(self, sql=None):
+        with self.con.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            cursor.close()
+        return result
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.con.close()

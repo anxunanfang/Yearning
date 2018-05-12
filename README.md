@@ -1,33 +1,48 @@
 <p align="center">
-        <img width="300" src="http://oy0f4k5qi.bkt.clouddn.com/git_logo2.svg">
+        <img width="300" src="logo.png">
 </p>
 
 # Yearning SQL审核平台
 
-![](https://img.shields.io/badge/build-passing-brightgreen.svg)  
+![](https://img.shields.io/badge/build-release-brightgreen.svg)  
+![](https://img.shields.io/badge/version-v1.1.2-brightgreen.svg)  
 ![](https://img.shields.io/badge/vue.js-2.5.0-brightgreen.svg) 
 ![](https://img.shields.io/badge/iview-2.8.0-brightgreen.svg?style=flat-square) 
 ![](https://img.shields.io/badge/python-3.6-brightgreen.svg)
-![](https://img.shields.io/badge/Django-1.11.3-brightgreen.svg)
+![](https://img.shields.io/badge/Django-2.0-brightgreen.svg)
 
-基于Inception的整套sql审核平台解决方案。
+##### 基于Inception的企业级web SQL审核平台。
 
-## Feature 功能：
+## Website 官网
+
+[www.yearning.io](http://yearning.io)
+
+## Feature 功能
+
+- 数据库字典自动生成
+- SQL查询
+    - 查询工单 
+    - 导出
+    - 自动补全，智能提示 
 - SQL可视化自动生成
- - INDEX 索引语句
- - ALTER 更改表结构语句
-- 数据库字典
-  - 数据表字段一键生成
+    - 索引语句自动生成
+    - DDL语句自动生成
 - SQL审核
     - 流程化工单
     - SQL语句检测
     - SQL语句执行
     - SQL回滚
-    - 站内信通知
+    - 历史审核记录
+    - 查询语句审计
+- 推送
+    - 站内信工单通知
+    - E-mail工单推送
+    - 钉钉webhook机器人工单推送
+- 其他
     - todoList
-    - 钉钉webhook机器人通知    
-- 历史审核记录
+    - LDAP登陆   
 - 用户权限及管理
+    - 拼图式权限划分(共12项独立权限,可随意组合)
 
 ## Environment 环境
 
@@ -35,25 +50,21 @@
 
 - Vue.js 2.5
 
-- Django 1.11.3
+- Django 2.0
 
-## Install 安装及更新日志
-- [Yearning使用及安装文档](https://cookiey.github.io/Yearning-document/)
+## Install 安装及使用日志
 
-- 体验及快速测试安装(docker)
+详细安装步骤请访问[www.yearning.io](http://yearning.io)获得帮助
 
-```
-docker run -it -d -p 80:80 -p 8000:8000 -e "HOST=宿主机ip" registry.cn-hangzhou.aliyuncs.com/cookie/yearning:v0.0.4 
+[使用说明](http://supermancookie.com/Yearning-document/)
 
-初始账号: admin  密码: Yearning_admin
-```
-注意: 
+## Support 支持Yearning
 
-由于目前镜像并没有将数据库数据存放目录挂载到宿主机所以不建议在正式环境中使用docker
+如果Yearning能够帮助到你，请支持下Yearning吧，让Yearning能够持续改善并更新
 
-建议在使用前评估及测试中使用
-## Update 更新日志
-  - [Yearning更新日志](https://cookiey.github.io/Yearning-document/update/)
+![](http://oy0f4k5qi.bkt.clouddn.com/alipay.jpg)
+![](http://oy0f4k5qi.bkt.clouddn.com/wechat.jpg)
+  
 ## About 联系方式
    
    QQ群:103674679
@@ -64,29 +75,27 @@ docker run -it -d -p 80:80 -p 8000:8000 -e "HOST=宿主机ip" registry.cn-hangzh
 
 - Login
 
-![login -w1200](http://oy0f4k5qi.bkt.clouddn.com/logo.png)
+![login](http://oy0f4k5qi.bkt.clouddn.com/login_yearning.png)
 
 
 - Dashboard
 
-![](http://oy0f4k5qi.bkt.clouddn.com/index.png)
+![](http://oy0f4k5qi.bkt.clouddn.com/23123.png)
 
+- SQL语法高亮及自动补全
 
-- 表结构提交页面
+![](http://oy0f4k5qi.bkt.clouddn.com/dml.png)
 
-![](http://oy0f4k5qi.bkt.clouddn.com/table.png)
+- 细粒度的权限分配
+![](http://oy0f4k5qi.bkt.clouddn.com/per.png)
 
-- SQL提交页面
-
-![](http://oy0f4k5qi.bkt.clouddn.com/sql.png)
-
-- 工单页面
-![](http://oy0f4k5qi.bkt.clouddn.com/order.png)
+- 我的工单
+![](http://oy0f4k5qi.bkt.clouddn.com/myorder.png)
 
 
 ## License
 
-- MIT
+- Apache 2.0
 
 2018 © Cookie
 

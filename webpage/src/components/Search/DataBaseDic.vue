@@ -32,7 +32,7 @@ a:active {
         <Form :label-width="80">
           <Form-item label="数据库连接:">
             <Select v-model="formItem.namedata" @on-change="InitializationTableInfo" filterable>
-                <Option v-for="i in TableList" :value="i.Name" :key="i.Name">{{ i.Name }}</Option>
+                <Option v-for="i in TableList" :value="i" :key="i">{{ i }}</Option>
               </Select>
           </Form-item>
           <Form-item label="数据库:">
@@ -48,6 +48,7 @@ a:active {
           <Form-item label="操作:">
             <Button @click="ResetData" type="warning">刷新</Button>
             <Button @click="ExportData.off=true" type="info">导出</Button>
+            <Button @click="AddtableInfo" type="success">添加</Button>
           </Form-item>
 
         </Form>
@@ -114,8 +115,6 @@ a:active {
     </div>
   </Modal>
 
-
-
   <Modal v-model="ExportData.off" width="360">
     <p slot="header" style="color:#5cadff;text-align:center">
       <Icon type="information-circled"></Icon>
@@ -135,13 +134,63 @@ a:active {
       <a v-if="this.ExportData.urloff" :href="ExportData.url">点击下载数据文档</a>
     </div>
   </Modal>
+
+  <Modal v-model="AddTable.open" width="700" @on-ok="handleSubmit('formDynamic')" ok-text="提交">
+    <p slot="header" style="color:#5cadff;text-align:center">
+      <Icon type="information-circled"></Icon>
+      <span>添加数据表/字段</span>
+    </p>
+    <Form ref="formDynamic" :model="formDynamic" :label-width="80" style="width: 650px">
+      <FormItem
+        :rules="{required: true, message: '请填写表名!', trigger: 'blur'}"
+        prop="tablename"
+        label="表名"
+        >
+        <Input type="text" v-model="formDynamic.tablename" placeholder="请输入表名" style="width: 20%"></Input>
+        <Input type="text" v-model="formDynamic.tablecomment" placeholder="请输入表备注" style="width: 20%"></Input>
+      </FormItem>
+      <FormItem
+        v-for="(item, index) in formDynamic.items"
+        :key="index"
+        :label="'字段 ' + item.index"
+        :prop="'items.' + index + '.value'"
+        :rules="{required: true, message: '字段 ' + item.index +' 不可为空', trigger: 'blur'}">
+        <Row>
+          <Col span="7">
+          <Input type="text" v-model="item.value" placeholder="请输入字段名"></Input>
+          </Col>
+          <Col span="7">
+          <Select type="text" v-model="item.type" placeholder="请输入字段类型">
+            <Option v-for="i in optionData" :key="i" :value="i"> {{i}}</Option>
+          </Select>
+          </Col>
+          <Col span="5">
+          <Input type="text" v-model="item.extra" placeholder="请输入字段备注"></Input>
+          </Col>
+          <Col span="4" offset="1">
+          <Button type="ghost" @click="handleRemove(index)">删除</Button>
+          </Col>
+        </Row>
+      </FormItem>
+      <FormItem>
+        <Row>
+          <Col span="12">
+          <Button type="dashed" long @click="handleAdd" icon="plus-round">添加字段</Button>
+          </Col>
+        </Row>
+      </FormItem>
+      <FormItem>
+        <Button type="ghost" @click="handleReset('formDynamic')" style="margin-left: 8px">重置</Button>
+      </FormItem>
+    </Form>
+  </Modal>
+
 </div>
 </template>
 <script>
 import ICol from '../../../node_modules/iview/src/components/grid/col.vue'
 import axios from 'axios'
 import util from '../../libs/util'
-import Cookies from 'js-cookie'
 export default {
   components: {
     ICol
@@ -149,25 +198,61 @@ export default {
   name: 'DataBaseDic',
   data () {
     return {
+      AddTable: {
+        open: false
+      },
+      index: 1,
+      formDynamic: {
+        items: [
+          {
+            value: '',
+            index: 1,
+            type: '',
+            extra: ''
+          }
+        ],
+        tablename: '',
+        tablecomment: ''
+      },
+      optionData: [
+        'varchar',
+        'int',
+        'char',
+        'tinytext',
+        'text',
+        'mediumtext',
+        'longtext',
+        'blob',
+        'mediumblob',
+        'longblob',
+        'tinyint',
+        'smallint',
+        'mediumint',
+        'bigint',
+        'time',
+        'year',
+        'date',
+        'datetime',
+        'timestamp',
+        'decimal',
+        'float',
+        'double',
+        'jason'
+      ],
       formItem: {
         info: [],
-        data: []
+        data: [],
+        select: '',
+        namedata: ''
       },
-      columnsInfo: [{
+      columnsInfo: [
+        {
           title: '字段名',
           key: 'Field'
         },
         {
           title: '类型',
           key: 'Type'
-        },
-        {
-          title: '是否可以为空',
-          key: 'Null'
-        },
-        {
-          title: '默认值',
-          key: 'Default'
         },
         {
           title: '备注',
@@ -188,7 +273,56 @@ export default {
                     this.EditField(params.row, params.index)
                   }
                 }
-              }, '更改字段备注')
+              }, '更改字段备注'),
+              h('Poptip', {
+                props: {
+                  confirm: true,
+                  transfer: true,
+                  title: '您确认删除这条内容吗?'
+                },
+                style: {
+                  marginLeft: '5%'
+                },
+                on: {
+                  'on-ok': () => {
+                    let data = {
+                      'name': this.formItem.namedata,
+                      'basename': params.row.BaseName,
+                      'tablename': params.row.TableName,
+                      'field': params.row.Field
+                    }
+                    let auth = ''
+                    axios.post(`${util.url}/auth_twice`, {
+                      'permissions_type': 'dic'
+                    })
+                      .then(res => {
+                        auth = res.data
+                        if (auth === '1') {
+                          axios.put(`${util.url}/adminsql/delfield`, {
+                            'data': JSON.stringify(data)
+                          })
+                            .then(res => {
+                              this.$Notice.success({
+                                title: '通知',
+                                desc: res.data
+                              })
+                              this.ResetData()
+                            })
+                            .catch(error => {
+                              util.ajanxerrorcode(this, error)
+                            })
+                        } else {
+                          this.$Notice.error({
+                            title: '警告:',
+                            desc: '账号权限不足，无法提供修改功能！'
+                          })
+                        }
+                      })
+                  }
+                }
+              }, [
+                h('a', '删除字段')
+              ])
             ])
           }
         }
@@ -215,6 +349,58 @@ export default {
     }
   },
   methods: {
+    AddtableInfo () {
+      axios.post(`${util.url}/auth_twice`, {
+        'permissions_type': 'dic'
+      })
+        .then(res => {
+          if (res.data === '1') {
+            this.AddTable.open = true
+          } else {
+            this.$Notice.error({
+              title: '警告:',
+              desc: '账号权限不足，无法提供修改功能！'
+            })
+          }
+        })
+    },
+    handleReset (name) {
+      this.$refs[name].resetFields();
+    },
+    handleRemove (index) {
+      this.formDynamic.items.splice(index, 1)
+    },
+    handleSubmit (name) {
+      this.$refs[name].validate((valid) => {
+        if (valid) {
+          axios.put(`${util.url}/adminsql/addtable`, {
+            'tablename': this.formDynamic.tablename,
+            'basename': this.formItem.select,
+            'name': this.formItem.namedata,
+            'text': JSON.stringify(this.formDynamic.items),
+            'tablecomment': this.formDynamic.tablecomment
+          })
+            .then(res => {
+              this.$Notice.success({
+                title: '通知:',
+                desc: res.data
+              })
+            })
+            .catch(error => {
+              util.ajanxerrorcode(this, error)
+            })
+        } else {
+          this.$Message.error('请填下相关必填项之后再提交!');
+        }
+      })
+    },
+    handleAdd () {
+      this.index++;
+      this.formDynamic.items.push({
+        value: '',
+        index: this.index
+      });
+    },
     ExportDocx () {
       this.$Spin.show({
         render: (h) => {
@@ -233,15 +419,20 @@ export default {
       axios.post(`${util.url}/exportdocx/`, {
           'data': JSON.stringify(this.ExportData.checkbox),
           'connection_name': this.formItem.namedata,
-          'basename': this.formItem.select
+          'basename': this.formItem.select,
+          'permissions_type': 'dic'
         })
         .then(res => {
           this.ExportData.urloff = true
           this.$Notice.success({
-            title: '警告',
+            title: '通知',
             desc: res.data.status
           })
-          this.ExportData.url = `${util.url}/download/?url=${res.data.url}`
+          if (res.data.url === '') {
+            this.ExportData.urloff = false
+          } else {
+            this.ExportData.url = `${util.url}/download/?url=${res.data.url}`
+          }
           this.$Spin.hide();
         })
         .catch(error => {
@@ -293,6 +484,8 @@ export default {
           'tablelist': '1'
         })
         .then(res => {
+          this.$refs.totol.currentPage = 1
+          this.$refs.Limit.currentPage = 1
           this.Limitpage = res.data.all
           this.TmpData = res.data.tablelist
           this.PageNumber = res.data.tablepage
@@ -334,12 +527,11 @@ export default {
         .then(res => {
           this.TmpData = res.data
         })
-        .catch(error => {
+        .catch(() => {
           this.$Notice.error({
             title: '警告',
             desc: '分页获取失败!'
           })
-          console.log(error)
         })
     },
     // 获得点击表名后获得的单表数据
@@ -392,11 +584,11 @@ export default {
     EdiTtableInfo (c) {
       let auth = ''
       axios.post(`${util.url}/auth_twice`, {
-          'user': Cookies.get('user')
+          'permissions_type': 'dic'
         })
         .then(res => {
           auth = res.data
-          if (auth === 'admin') {
+          if (auth === '1') {
             this.EditTableinfo.Onoff = true
             this.EditTableinfo.comment = c[0].TableComment
             this.EditTableinfo.basename = c[0].BaseName
@@ -413,11 +605,11 @@ export default {
     Deltabledata (c) {
       let auth = ''
       axios.post(`${util.url}/auth_twice`, {
-          'user': Cookies.get('user')
+          'permissions_type': 'dic'
         })
         .then(res => {
           auth = res.data
-          if (auth === 'admin') {
+          if (auth === '1') {
             axios.put(`${util.url}/adminsql/deltable`, {
                 'basename': c[0].BaseName,
                 'tablename': c[0].TableName,
@@ -469,11 +661,11 @@ export default {
     EditField (row) {
       let auth = ''
       axios.post(`${util.url}/auth_twice`, {
-          'user': Cookies.get('user')
+          'permissions_type': 'dic'
         })
         .then(res => {
           auth = res.data
-          if (auth === 'admin') {
+          if (auth === '1') {
             this.EditTableinfo.offon = true
             this.EditTableinfo.felid = row.Field
             this.EditTableinfo.felidcomment = row.Extra
@@ -532,16 +724,12 @@ export default {
     }
   },
   mounted () {
-    axios.get(`${util.url}/sqldic/`)
+    axios.get(`${util.url}/sqldic/all?permissions_type=dic`)
       .then(res => {
         this.TableList = res.data
-        console.log(this.formItem.name)
       })
       .catch(error => {
-        this.$Notice.error({
-          title: '警告',
-          desc: error
-        })
+       util.ajanxerrorcode(this, error)
       })
   }
 }

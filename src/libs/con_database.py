@@ -9,6 +9,7 @@ cookie
 
 import pymysql
 
+
 class SQLgo(object):
     def __init__(self, ip=None, user=None, password=None, db=None, port=None):
         self.ip = ip
@@ -44,11 +45,34 @@ class SQLgo(object):
             self.con.commit()
         return result
 
+    def search(self, sql=None):
+        data_dict=[]
+        id = 0
+        with self.con.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+            sqllist = sql
+            cursor.execute(sqllist)
+            result = cursor.fetchall()
+            for field in cursor.description:
+                if id == 0:
+                    data_dict.append({'title': field[0], "key": field[0], "fixed": "left", "width": 150})
+                    id += 1
+                else:
+                    data_dict.append({'title': field[0], "key": field[0], "width": 200})
+            len = cursor.rowcount
+        return {'data': result, 'title': data_dict, 'len': len}
+
+    def dic_data(self, sql=None):
+        with self.con.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+            sqllist = sql
+            cursor.execute(sqllist)
+            result = cursor.fetchall()
+        return result
+
     def showtable(self, table_name):
         with self.con.cursor() as cursor:
             sqllist = '''
-                    select aa.COLUMN_NAME,aa.COLUMN_DEFAULT,aa.IS_NULLABLE,
-                    aa.COLUMN_TYPE,aa.COLUMN_KEY,aa.COLUMN_COMMENT, cc.TABLE_COMMENT 
+                    select aa.COLUMN_NAME,
+                    aa.DATA_TYPE,aa.COLUMN_COMMENT, cc.TABLE_COMMENT 
                     from information_schema.`COLUMNS` aa LEFT JOIN 
                     (select DISTINCT bb.TABLE_SCHEMA,bb.TABLE_NAME,bb.TABLE_COMMENT 
                     from information_schema.`TABLES` bb ) cc  
@@ -60,14 +84,37 @@ class SQLgo(object):
             td = [
                 {
                     'Field': i[0], 
+                    'Type': i[1],
+                    'Extra': i[2],
+                    'TableComment': i[3]
+                } for i in result
+                ]
+        return td
+
+    def gen_alter(self, table_name):
+        with self.con.cursor() as cursor:
+            sqllist = '''
+                           select aa.COLUMN_NAME,aa.COLUMN_DEFAULT,aa.IS_NULLABLE,
+                           aa.COLUMN_TYPE,aa.COLUMN_KEY,aa.COLUMN_COMMENT, cc.TABLE_COMMENT 
+                           from information_schema.`COLUMNS` aa LEFT JOIN 
+                           (select DISTINCT bb.TABLE_SCHEMA,bb.TABLE_NAME,bb.TABLE_COMMENT 
+                           from information_schema.`TABLES` bb ) cc  
+                           ON (aa.TABLE_SCHEMA=cc.TABLE_SCHEMA and aa.TABLE_NAME = cc.TABLE_NAME )
+                           where aa.TABLE_SCHEMA = '%s' and aa.TABLE_NAME = '%s';
+                           ''' % (self.db, table_name)
+            cursor.execute(sqllist)
+            result = cursor.fetchall()
+            td = [
+                {
+                    'Field': i[0],
                     'Type': i[3],
-                    'Null': i[2], 
+                    'Null': i[2],
                     'Key': i[4],
-                    'Default': i[1], 
+                    'Default': i[1],
                     'Extra': i[5],
                     'TableComment': i[6]
                 } for i in result
-                ]
+            ]
         return td
 
     def basename(self):
@@ -130,3 +177,10 @@ class SQLgo(object):
             result = cursor.fetchall()
             data = [c for i in result for c in i]
             return data
+
+    def query_info(self, sql=None):
+        with self.con.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+            sqllist = sql
+            cursor.execute(sqllist)
+            result = cursor.fetchall()
+        return result

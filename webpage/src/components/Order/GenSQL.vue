@@ -4,8 +4,12 @@
 .demo-spin-icon-load {
     animation: ani-demo-spin 1s linear infinite;
 }
+p{
+  word-wrap: break-word;
+  word-break: break-all;
+  overflow: hidden;
+}
 </style>
-
 <template>
 <div>
   <Row>
@@ -32,17 +36,18 @@
               <Option v-for="item in tableform.basename" :value="item" :key="item">{{ item }}</Option>
             </Select>
           </Form-item>
-          <Form-item label="数据库表名:" prop="tablename">
+          <Form-item label="数据库表名:">
             <Select v-model="formItem.tablename" placeholder="请选择" filterable>
               <Option v-for="item in tableform.info" :value="item" :key="item">{{ item }}</Option>
             </Select>
           </Form-item>
-          <Button type="warning" @click="canel()" style="margin-left: 20%">重置</Button>
-          <Button type="primary" @click="getinfo()" style="margin-left: 5%">连接</Button>
+          <Button type="warning" @click="canel()" style="margin-left: 15%">重置</Button>
+          <Button type="primary" @click="getinfo()" style="margin-left: 3%">连接</Button>
+          <Button type="success" @click="confirmsql()" style="margin-left: 3%">生成</Button>
         </Form>
         <br>
         <Tabs value="order1" style="height: 300px;overflow-y: scroll;">
-          <TabPane label="生成语句" name="order1">
+          <TabPane label="DDL语句" name="order1">
             <p v-for="list in sql" style="font-size: 12px;color:#2b85e4"> {{ list }}<br><br></p>
           </TabPane>
           <TabPane label="提交工单" name="order2">
@@ -60,7 +65,21 @@
       </p>
       <div class="edittable-table-height-con">
         <Tabs :value="tabs">
-          <TabPane label="添加字段" name="order1" icon="plus">
+          <TabPane label="手动模式" name="order1" icon="edit">
+            <Form>
+              <FormItem>
+                <editor v-model="formDynamic" @init="editorInit"></editor>
+              </FormItem>
+              <FormItem>
+                <Table :columns="columnsName" :data="Testresults" highlight-row></Table>
+              </FormItem>
+              <FormItem>
+                <Button type="warning" @click="test_sql">检测</Button>
+                <Button type="primary" @click="handleSubmit(formDynamic)" style="margin-left: 3%" :disabled="this.validate_gen">提交到DDL语句</Button>
+              </FormItem>
+            </Form>
+          </TabPane>
+          <TabPane label="生成添加字段" name="order3" icon="plus">
             <Table stripe :columns="addcolums" :data="add_row" height="385" border></Table>
             <div style="margin-top: 5%">
               <Input v-model="Add_tmp.Field" placeholder="字段名" style="width: 10%"></Input>
@@ -78,15 +97,8 @@
               <Button type="info" @click.native="AddColumns()">添加</Button>
             </div>
           </TabPane>
-
-          <TabPane label="修改&删除字段" name="order2" icon="edit">
-            <edittable refs="table2" v-model="TableDataNew" :columns-list="tabcolumns" @index="remove"></edittable>
-            <br>
-            <Button type="info" @click="confirmsql()" style="margin-left: 80%">生成</Button>
-          </TabPane>
-
-          <TabPane label="添加&删除索引" name="order3" icon="ios-unlocked">
-            <editindex :tabledata="indexinfo" :table_name="formItem.tablename" @on-indexdata="getindexconfirm"></editindex>
+          <TabPane label="生成修改&删除字段" name="order4" icon="edit">
+            <edittable refs="table2" v-model="TableDataNew" :columns-list="tabcolumns" @index="remove" @on-change="cell_change"></edittable>
           </TabPane>
         </Tabs>
       </div>
@@ -114,8 +126,13 @@
           <FormItem label="执行SQL:">
             <p v-for="i in sql">{{i}}</p>
           </FormItem>
-          <FormItem label="工单提交说明:">
+          <FormItem label="工单提交说明:" required>
             <Input v-model="formItem.text" placeholder="最多不超过20个字"></Input>
+          </FormItem>
+          <FormItem label="指定审核人:" required>
+            <Select v-model="formItem.assigned" filterable transfer>
+              <Option v-for="i in assigned" :value="i" :key="i">{{i}}</Option>
+            </Select>
           </FormItem>
           <FormItem label="是否备份">
             <RadioGroup v-model="formItem.backup">
@@ -137,12 +154,13 @@
 import Cookies from 'js-cookie'
 import axios from 'axios'
 import util from '../../libs/util'
-import editindex from './components/ModifyIndex.vue'
 import edittable from './components/editTable'
+import ICol from 'iview/src/components/grid/col'
 export default {
   components: {
-    editindex,
-    edittable
+    ICol,
+    edittable,
+    editor: require('../../libs/editor')
   },
   data () {
     return {
@@ -150,13 +168,48 @@ export default {
       item: {},
       basename: [],
       sqlname: [],
-      TableDataOld: [],
       TableDataNew: [],
       tableform: {
         sqlname: [],
         basename: [],
         info: []
       },
+      columnsName: [
+        {
+          title: 'ID',
+          key: 'ID',
+          width: '50'
+        },
+        {
+          title: '阶段',
+          key: 'stage',
+          width: '100'
+        },
+        {
+          title: '错误等级',
+          key: 'errlevel',
+          width: '100'
+        },
+        {
+          title: '阶段状态',
+          key: 'stagestatus',
+          width: '150'
+        },
+        {
+          title: '错误信息',
+          key: 'errormessage'
+        },
+        {
+          title: '当前检查的sql',
+          key: 'sql'
+        },
+        {
+          title: '预计影响的SQL',
+          key: 'affected_rows',
+          width: '130'
+        }
+      ],
+      Testresults: [],
       tabcolumns: [
         {
           title: '字段名',
@@ -247,7 +300,6 @@ export default {
           }
         }
       ],
-      indexinfo: [],
       sql: [],
       openswitch: false,
       pass: false,
@@ -291,17 +343,105 @@ export default {
         connection_name: '',
         basename: '',
         tablename: '',
-        backup: 0
+        backup: '0',
+        assigned: ''
       },
       id: null,
       tabs: 'order1',
-      optionData: ['varchar', 'int', 'char', 'tinytext', 'text', 'mediumtext', 'longtext', 'tinyint', 'smallint', 'mediumint', 'bigint']
+      optionData: [
+        'varchar',
+        'int',
+        'char',
+        'tinytext',
+        'text',
+        'mediumtext',
+        'longtext',
+        'blob',
+        'mediumblob',
+        'longblob',
+        'tinyint',
+        'smallint',
+        'mediumint',
+        'bigint',
+        'time',
+        'year',
+        'date',
+        'datetime',
+        'timestamp',
+        'decimal',
+        'float',
+        'double',
+        'jason'
+      ],
+      assigned: [],
+      formDynamic: '',
+      validate_gen: true
     }
   },
   methods: {
+    editorInit: function () {
+      require('brace/mode/mysql')
+      require('brace/theme/xcode')
+    },
     Connection_Name (index) {
       if (index) {
         this.ScreenConnection(index)
+      }
+    },
+    test_sql () {
+      let ddl = ['select', 'insert', 'update', 'delete']
+      let createtable = this.formDynamic.split(';')
+      for (let i of createtable) {
+        for (let c of ddl) {
+          i = i.replace(/(^\s*)|(\s*$)/g, '')
+          if (i.toLowerCase().indexOf(c) === 0) {
+            this.$Message.error('不可提交非DDL语句!');
+            return false
+          }
+        }
+      }
+      this.$refs['formItem'].validate((valid) => {
+        if (valid) {
+            let tmp = this.formDynamic.replace(/(;|；)$/gi, '').replace(/；/g, ';')
+            axios.put(`${util.url}/sqlsyntax/test`, {
+              'id': this.id[0].id,
+              'base': this.formItem.basename,
+              'sql': tmp
+            })
+              .then(res => {
+                if (res.data.status === 200) {
+                  this.Testresults = res.data.result
+                  let gen = 0
+                  this.Testresults.forEach(vl => {
+                    if (vl.errlevel !== 0) {
+                      gen += 1
+                    }
+                  })
+                  if (gen === 0) {
+                    this.validate_gen = false
+                  } else {
+                    this.validate_gen = true
+                  }
+                } else {
+                  this.$Notice.error({
+                    title: '警告',
+                    desc: '无法连接到Inception!'
+                  })
+                }
+              })
+              .catch(error => {
+                util.ajanxerrorcode(this, error)
+              })
+          } else {
+            this.$Message.error('请填写具体地址或sql语句后再测试!');
+          }
+      })
+    },
+    handleSubmit () {
+      let createtable = this.formDynamic.replace(/(;|；)$/gi, '').replace(/\s/g, ' ').replace(/；/g, ';').split(';')
+      this.validate_gen = true
+      for (let i of createtable) {
+        this.sql.push(i)
       }
     },
     DataBaseName (index) {
@@ -347,10 +487,10 @@ export default {
       }
     },
     getdatabases () {
-      this.delinfo()
-      axios.put(`${util.url}/workorder/connection`)
+      axios.put(`${util.url}/workorder/connection`, {'permissions_type': 'ddl'})
         .then(res => {
-          this.item = res.data
+          this.item = res.data['connection']
+          this.assigned = res.data['assigend']
         })
         .catch(error => {
           util.ajanxerrorcode(this, error)
@@ -379,8 +519,7 @@ export default {
               'id': this.id[0].id
             })
             .then(res => {
-              this.TableDataOld = res.data
-              this.TableDataNew = Array.from(this.TableDataOld)
+              this.TableDataNew = res.data
               this.$Spin.hide()
             })
             .catch(() => {
@@ -427,14 +566,9 @@ export default {
       })
     },
     canel () {
-      this.$refs['formItem'].resetFields();
-      this.delinfo()
-    },
-    edit_tab (col) {
-      this.TableDataNew[col.index] = col.row
-      this.$Notice.success({
-        title: `${col.row.Field}-字段修改成功!`
-      })
+      this.sql = []
+      this.pass = false
+      this.getinfo()
     },
     confirmsql () {
       if (this.Add_tmp.Field !== '') {
@@ -443,23 +577,11 @@ export default {
           desc: '请将需要添加的字段添加进入临时表或者删除!'
         })
       } else {
-        this.TableDataNew.forEach((item, i) => {
-          if (this.TableDataNew[i].Type === this.TableDataOld[i].Type &&
-            this.TableDataNew[i].Field === this.TableDataOld[i].Field &&
-            this.TableDataNew[i].Default === this.TableDataOld[i].Default &&
-            this.TableDataNew[i].Extra === this.TableDataOld[i].Extra &&
-            this.TableDataNew[i].Null === this.TableDataOld[i].Null) {} else {
-            this.putdata.push({
-              'edit': this.TableDataNew[i],
-              'table_name': this.formItem.tablename
-            })
-          }
-        })
         this.putdata.push({
           'add': this.add_row,
           'table_name': this.formItem.tablename
         })
-        axios.put(`${util.url}/sqlorder/sql`, {
+        axios.put(`${util.url}/gensql/sql`, {
             'data': JSON.stringify(this.putdata),
             'basename': this.formItem.basename
           })
@@ -474,69 +596,48 @@ export default {
           })
       }
     },
-    delinfo () {
-      this.tableform.sqlname = []
-      this.tableform.basename = []
-      this.tableform.info = []
-      this.formItem.connection_name = ''
-      this.formItem.computer_room = ''
-      this.formItem.basename = ''
-      this.formItem.table_name = ''
-      this.formItem.tablename = ''
-      this.TableDataOld = []
-      this.TableDataNew = []
-      this.sql = []
-      this.pass = false
-      this.indexinfo = []
-    },
-    getindex () {
-      if (this.formItem.table_name) {
-        axios.put(`${util.url}/workorder/indexdata`, {
-            'login': JSON.stringify(this.formItem),
-            'table': this.formItem.tablename,
-            'id': this.id[0].id
-          })
-          .then(res => {
-            this.indexinfo = res.data
-          }).catch(error => {
-            util.ajanxerrorcode(this, error)
-          })
-      }
-    },
-    getindexconfirm (val) {
-      for (let i of val) {
-        this.sql.push(i)
-      }
-    },
     orderswitch () {
       this.openswitch = !this.openswitch
     },
     commitorder () {
-      if (this.pass === true) {
-        axios.post(`${util.url}/sqlsyntax/`, {
+      if (this.sql === [] || this.formItem.basename === '' || this.assigned === '' || this.formItem.text === '' || this.formItem.assigned === '') {
+        this.$Notice.error({
+          title: '警告',
+          desc: '工单数据缺失,请检查工单信息是否缺失!'
+        })
+      } else {
+        if (this.pass === true) {
+          axios.post(`${util.url}/sqlsyntax/`, {
             'data': JSON.stringify(this.formItem),
             'sql': JSON.stringify(this.sql),
             'user': Cookies.get('user'),
             'type': 0,
             'id': this.id[0].id
           })
-          .then(res => {
-            this.$Notice.success({
-              title: '通知',
-              desc: res.data
-            })
-            this.$router.push({
-              name: 'myorder'
-            })
-          }).catch(error => {
+            .then(res => {
+              this.$Notice.success({
+                title: '通知',
+                desc: res.data
+              })
+              this.$router.push({
+                name: 'myorder'
+              })
+            }).catch(error => {
             util.ajanxerrorcode(this, error)
           })
-      } else {
-        this.$Notice.warning({
-          title: '注意',
-          desc: '提交工单需点击确认按钮'
-        })
+        } else {
+          this.$Notice.warning({
+            title: '注意',
+            desc: '提交工单需点击确认按钮'
+          })
+        }
       }
+    },
+    cell_change (data) {
+      this.putdata.push({
+        'edit': data,
+        'table_name': this.formItem.tablename
+      })
     }
   },
   mounted () {

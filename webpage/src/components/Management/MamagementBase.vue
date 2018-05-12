@@ -14,7 +14,7 @@
       添加数据库
     </p>
     <div class="edittable-testauto-con">
-      <Form ref="formValidate" :model="formItem" :label-width="80" :rules="ruleInline">
+      <Form ref="formValidate" :model="formItem" :label-width="100" :rules="ruleInline">
         <Form-item label="机房:">
           <Select v-model="formItem.add" placeholder="请选择">
             <Option v-for="list in dataset" :value="list" :key="list">{{ list }}</Option>
@@ -34,6 +34,18 @@
         </Form-item>
         <Form-item label="密码:" prop="password">
           <Input v-model="formItem.password" placeholder="请输入" type="password"></Input>
+        </Form-item>
+        <Form-item label="email推送开关:">
+          <i-switch v-model="mail_switch" size="large" @on-change="mail_switching">
+            <span slot="open">开</span>
+            <span slot="close">关</span>
+          </i-switch>
+        </Form-item>
+        <Form-item label="钉钉推送开关:">
+          <i-switch v-model="dingding_switch" size="large" @on-change="dingding_switching">
+            <span slot="open">开</span>
+            <span slot="close">关</span>
+          </i-switch>
         </Form-item>
         <Button type="info" @click="testlink()">测试连接</Button>
         <Button type="success" @click="add()" style="margin-left: 5%">确定</Button>
@@ -90,7 +102,7 @@
       <Table :columns="columns" :data="rowdata" height="550"></Table>
     </div>
     <br>
-    <Page :total="pagenumber" show-elevator @on-change="splicpage" :page-size="10"></Page>
+    <Page :total="pagenumber" show-elevator @on-change="mountdata" :page-size="10" ref="totol"></Page>
   </Card>
   </Col>
   <Modal v-model="delbaseModal" :width="500">
@@ -273,7 +285,9 @@ export default {
       dingdingid: null,
       dingurl: '',
       tmp_id: null,
-      diclist: []
+      diclist: [],
+      mail_switch: false,
+      dingding_switch: false
     }
   },
   methods: {
@@ -282,7 +296,7 @@ export default {
       this.formItem = {}
     },
     testlink () {
-      axios.put(util.url + '/mamagement_sql/', {
+      axios.put(util.url + '/management_db/', {
           'ip': this.formItem.ip,
           'user': this.formItem.username,
           'password': this.formItem.password,
@@ -318,7 +332,7 @@ export default {
             'password': this.formItem.password,
             'port': this.formItem.port
           }
-          axios.post(util.url + '/mamagement_sql/', {
+          axios.post(util.url + '/management_db/', {
               'data': JSON.stringify(data)
             })
             .then(() => {
@@ -326,6 +340,8 @@ export default {
                 title: '通知',
                 desc: '数据库信息添加成功!'
               })
+              this.$refs.totol.currentPage = 1
+              this.mountdata()
             })
             .catch(error => {
               this.$Notice.error({
@@ -334,7 +350,6 @@ export default {
               })
             })
           this.del()
-          this.mountdata()
         }
       })
     },
@@ -358,23 +373,30 @@ export default {
           duration: 5
         })
       } else {
-        this.$Loading.start()
-        axios.put(`${util.url}/adminsql/deldic`, {
+        if (this.dictionary.getdel.length === 0) {
+          this.$Message.error({
+            content: '请选择相应的数据表再删除!',
+            duration: 5
+          })
+        } else {
+          this.$Loading.start()
+          axios.put(`${util.url}/adminsql/deldic`, {
             'name': this.dictionary.delname,
             'basename': this.dictionary.getdel
           })
-          .then(res => {
-            this.$Notice.success({
-              title: '通知',
-              desc: res.data
+            .then(res => {
+              this.$Notice.success({
+                title: '通知',
+                desc: res.data
+              })
+              this.$Loading.finish()
+              this.cleardata()
             })
-            this.$Loading.finish()
-            this.cleardata()
-          })
-          .catch(error => {
-            util.ajanxerrorcode(this, error)
-            this.$Loading.error()
-          })
+            .catch(error => {
+              util.ajanxerrorcode(this, error)
+              this.$Loading.error()
+            })
+        }
       }
     },
     // 生成数据库字典
@@ -403,10 +425,10 @@ export default {
             'id': this.tmp_id,
             'basename': JSON.stringify(this.dictionary.databases)
           })
-          .then(() => {
+          .then(res => {
             this.$Notice.success({
               title: '通知',
-              desc: '数据库字典生成成功！'
+              desc: res.data
             })
             this.$Spin.hide();
             this.cleardata()
@@ -467,14 +489,16 @@ export default {
     },
     // 重置
     cleardata () {
+      this.dictionary.name = ''
       this.dictionary.databases = []
       this.dictionary.databasesList = []
       this.dictionary.getdellist = []
       this.dictionary.getdel = []
+      this.dictionary.delname = ''
     },
     delbaselink () {
       if (this.delbasename === this.delconfirmbasename) {
-        axios.delete(util.url + '/mamagement_sql/' + this.delbasename)
+        axios.delete(`${util.url}/management_db?del=${this.delbasename}`)
           .then(res => {
             this.$Notice.success({
               title: '通知',
@@ -482,6 +506,7 @@ export default {
             })
             this.delbaseModal = false
             this.delconfirmbasename = ''
+            this.$refs.totol.currentPage = 1
             this.mountdata()
           })
           .catch(error => {
@@ -493,15 +518,14 @@ export default {
         })
       }
     },
-    splicpage (page) {
-      this.mountdata(page)
-    },
     mountdata (vl = 1) {
-      axios.get(`${util.url}/mamagement_sql?page=${vl}`)
+      axios.get(`${util.url}/management_db?page=${vl}&permissions_type=base`)
         .then(res => {
           this.rowdata = res.data.data
           this.pagenumber = parseInt(res.data.page.alter_number)
           this.diclist = res.data.diclist
+          this.mail_switch = res.data.mail_switch
+          this.dingding_switch = res.data.ding_switch
         })
         .catch(error => {
           util.ajanxerrorcode(this, error)
@@ -534,6 +558,40 @@ export default {
             desc: '钉钉推送消息已设置成功!'
           })
           this.addDingding = false
+        })
+        .catch(error => {
+          util.ajanxerrorcode(this, error)
+        })
+    },
+    mail_switching (status) {
+      let id = null
+      status ? id = 1 : id = 0
+      axios.post(`${util.url}/global_switch`, {
+        'type': '1',
+        'id': id
+      })
+        .then(res => {
+          this.$Notice.info({
+            title: '信息',
+            desc: res.data
+          })
+        })
+        .catch(error => {
+          util.ajanxerrorcode(this, error)
+        })
+    },
+    dingding_switching (status) {
+      let id = null
+      status ? id = 1 : id = 0
+      axios.post(`${util.url}/global_switch`, {
+        'type': '0',
+        'id': id
+      })
+        .then(res => {
+          this.$Notice.info({
+            title: '信息',
+            desc: res.data
+          })
         })
         .catch(error => {
           util.ajanxerrorcode(this, error)
