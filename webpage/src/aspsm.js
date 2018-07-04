@@ -1,8 +1,9 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import Cookies from 'js-cookie'
-import {MainRoute, appRouter} from './router'
+//
+import { MainRoute, appRouter } from './router'
 import util from './libs/util'
+
 Vue.use(Vuex)
 const store = new Vuex.Store({
   state: {
@@ -42,8 +43,33 @@ const store = new Vuex.Store({
     messageCount: 0
   },
   mutations: {
+    clearAllTags (state) {
+      state.pageOpenedList.splice(1)
+      state.cachePage.length = 0
+      localStorage.pageOpenedList = JSON.stringify(state.pageOpenedList)
+    },
+    clearOtherTags (state, vm) {
+      let currentName = vm.$route.name
+      let currentIndex = 0
+      state.pageOpenedList.forEach((item, index) => {
+        if (item.name === currentName) {
+          currentIndex = index
+        }
+      })
+      if (currentIndex === 0) {
+        state.pageOpenedList.splice(1)
+      } else {
+        state.pageOpenedList.splice(currentIndex + 1)
+        state.pageOpenedList.splice(1, currentIndex - 1)
+      }
+      let newCachepage = state.cachePage.filter(item => {
+        return item === currentName
+      })
+      state.cachePage = newCachepage
+      localStorage.pageOpenedList = JSON.stringify(state.pageOpenedList)
+    },
     Menulist (state) {
-      let accessCode = parseInt(Cookies.get('access')) // 0
+      let accessCode = parseInt(sessionStorage.getItem('access')) // 0
       let menuList = []
       appRouter.forEach((item, index) => {
         if (item.access !== undefined) { // item.access=0
@@ -65,7 +91,7 @@ const store = new Vuex.Store({
               menuList[i - 1].children = childrenArr
             }
           }
-        } else { // 如果是权限页面
+        } else {
           if (item.children.length <= 1) {
             menuList.push(item)
           } else {
@@ -87,13 +113,13 @@ const store = new Vuex.Store({
       state.menuList = menuList
     },
     changeMenuTheme (state, theme) {
-      state.menuTheme = theme;
+      state.menuTheme = theme
     },
     lock (state) {
-      Cookies.set('locking', '1');
+      sessionStorage.setItem('locking', '1')
     },
     unlock (state) {
-      Cookies.set('locking', '0');
+      sessionStorage.setItem('locking', '0')
     },
     Breadcrumbset (state, name) {
       if (name === 'ownspace_index') {
@@ -126,9 +152,9 @@ const store = new Vuex.Store({
     removeTag (state, name) {
       state.pageOpenedList.map((item, index) => {
         if (item.name === name) {
-          state.pageOpenedList.splice(index, 1);
+          state.pageOpenedList.splice(index, 1)
         }
-      });
+      })
     }
   }
 })

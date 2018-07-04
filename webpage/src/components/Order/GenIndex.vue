@@ -1,10 +1,12 @@
 <style lang="less">
   @import '../../styles/common.less';
   @import 'components/table.less';
+
   .demo-spin-icon-load {
     animation: ani-demo-spin 1s linear infinite;
   }
-  p{
+
+  p {
     word-wrap: break-word;
     word-break: break-all;
     overflow: hidden;
@@ -15,69 +17,74 @@
   <div>
     <Row>
       <Col span="6">
-      <Card>
-        <p slot="title">
-          <Icon type="ios-redo"></Icon>
-          选择数据库
-        </p>
-        <div class="edittable-test-con">
-          <Form :model="formItem" :label-width="100" ref="formItem" :rules="ruleValidate">
-            <Form-item label="机房:" prop="computer_room">
-              <Select v-model="formItem.computer_room" placeholder="请选择" @on-change="Connection_Name">
-                <Option v-for="i in dataset" :value="i" :key="i">{{ i }}</Option>
-              </Select>
-            </Form-item>
-            <Form-item label="连接名称:" prop="connection_name">
-              <Select v-model="formItem.connection_name" placeholder="请选择" @on-change="DataBaseName">
-                <Option v-for="i in tableform.sqlname" :value="i.connection_name" :key="i.connection_name" filterable>{{ i.connection_name }}</Option>
-              </Select>
-            </Form-item>
-            <Form-item label="数据库库名:" prop="basename">
-              <Select v-model="formItem.basename" placeholder="请选择" @on-change="GetTableName" filterable>
-                <Option v-for="item in tableform.basename" :value="item" :key="item">{{ item }}</Option>
-              </Select>
-            </Form-item>
-            <Form-item label="数据库表名:" prop="tablename">
-              <Select v-model="formItem.tablename" placeholder="请选择" filterable>
-                <Option v-for="item in tableform.info" :value="item" :key="item">{{ item }}</Option>
-              </Select>
-            </Form-item>
-            <Button type="warning" @click="canel()" style="margin-left: 20%">重置</Button>
-            <Button type="primary" @click="getinfo()" style="margin-left: 5%">连接</Button>
-          </Form>
-          <br>
-          <Tabs value="order1" style="height: 300px;overflow-y: scroll;">
-            <TabPane label="生成语句" name="order1">
-              <p v-for="list in sql" style="font-size: 12px;color:#2b85e4"> {{ list }}<br><br></p>
-            </TabPane>
-            <TabPane label="提交工单" name="order2">
-              <Button type="primary" style="margin-left: 25%;margin-top: 20%;" @click.native="orderswitch" size="large">获取工单详情</Button>
-            </TabPane>
-          </Tabs>
-        </div>
-      </Card>
+        <Card>
+          <p slot="title">
+            <Icon type="ios-redo"></Icon>
+            选择数据库
+          </p>
+          <div class="edittable-test-con">
+            <Form :model="formItem" :label-width="100" ref="formItem" :rules="ruleValidate">
+              <Form-item label="机房:" prop="computer_room">
+                <Select v-model="formItem.computer_room" placeholder="请选择" @on-change="Connection_Name">
+                  <Option v-for="i in dataset" :value="i" :key="i">{{ i }}</Option>
+                </Select>
+              </Form-item>
+              <Form-item label="连接名称:" prop="connection_name">
+                <Select v-model="formItem.connection_name" placeholder="请选择" @on-change="DataBaseName">
+                  <Option v-for="i in tableform.sqlname" :value="i.connection_name" :key="i.connection_name" filterable>
+                    {{ i.connection_name }}
+                  </Option>
+                </Select>
+              </Form-item>
+              <Form-item label="数据库库名:" prop="basename">
+                <Select v-model="formItem.basename" placeholder="请选择" @on-change="GetTableName" filterable>
+                  <Option v-for="item in tableform.basename" :value="item" :key="item">{{ item }}</Option>
+                </Select>
+              </Form-item>
+              <Form-item label="数据库表名:" prop="tablename">
+                <Select v-model="formItem.tablename" placeholder="请选择" filterable>
+                  <Option v-for="item in tableform.info" :value="item" :key="item">{{ item }}</Option>
+                </Select>
+              </Form-item>
+              <Button type="warning" @click="canel()" style="margin-left: 20%">重置</Button>
+              <Button type="primary" @click="getinfo()" style="margin-left: 5%">连接</Button>
+            </Form>
+            <br>
+            <Tabs value="order1" style="height: 300px;overflow-y: scroll;">
+              <TabPane label="生成语句" name="order1">
+                <p v-for="list in sql" style="font-size: 12px;color:#2b85e4"> {{ list }}<br><br></p>
+              </TabPane>
+              <TabPane label="提交工单" name="order2">
+                <Button type="primary" style="margin-left: 25%;margin-top: 20%;" @click.native="orderswitch"
+                        size="large">获取工单详情
+                </Button>
+              </TabPane>
+            </Tabs>
+          </div>
+        </Card>
       </Col>
       <Col span="18" class="padding-left-10">
-      <Card>
-        <p slot="title">
-          <Icon type="android-remove"></Icon>
-          表结构详情
-        </p>
-        <div class="edittable-table-height-con">
-          <Tabs :value="tabs">
-            <TabPane label="表字段详情" name="order1" icon="folder">
-              <Table :columns="tabcolumns" :data="TableDataNew"></Table>
-            </TabPane>
-            <TabPane label="添加&删除索引" name="order2" icon="ios-unlocked">
-              <editindex :tabledata="indexinfo" :table_name="formItem.tablename" @on-indexdata="getindexconfirm"></editindex>
-              <br>
-              <br>
-              <br>
-              <br>
-            </TabPane>
-          </Tabs>
-        </div>
-      </Card>
+        <Card>
+          <p slot="title">
+            <Icon type="android-remove"></Icon>
+            表结构详情
+          </p>
+          <div class="edittable-table-height-con">
+            <Tabs :value="tabs">
+              <TabPane label="表字段详情" name="order1" icon="folder">
+                <Table :columns="tabcolumns" :data="TableDataNew"></Table>
+              </TabPane>
+              <TabPane label="添加&删除索引" name="order2" icon="ios-unlocked">
+                <editindex :tabledata="indexinfo" :table_name="formItem.tablename"
+                           @on-indexdata="getindexconfirm"></editindex>
+                <br>
+                <br>
+                <br>
+                <br>
+              </TabPane>
+            </Tabs>
+          </div>
+        </Card>
       </Col>
     </Row>
 
@@ -85,7 +92,7 @@
       <Row>
         <Card>
           <div class="step-header-con">
-            <h3 style="margin-left: 35%">Yearning SQL平台审核工单</h3>
+            <h3>Yearning SQL平台审核工单</h3>
           </div>
           <p class="step-content"></p>
           <Form class="step-form" :label-width="100">
@@ -109,6 +116,14 @@
                 <Option v-for="i in this.assigned" :value="i" :key="i">{{i}}</Option>
               </Select>
             </FormItem>
+            <FormItem label="延迟执行">
+              <InputNumber
+                v-model="formItem.delay"
+                :formatter="value => `${value}分钟`"
+                :parser="value => value.replace('分钟', '')"
+                :min="0">
+              </InputNumber>
+            </FormItem>
             <FormItem label="是否备份">
               <RadioGroup v-model="formItem.backup">
                 <Radio label="1">是</Radio>
@@ -126,10 +141,11 @@
 </template>
 
 <script>
-  import Cookies from 'js-cookie'
+  //
   import axios from 'axios'
   import util from '../../libs/util'
   import editindex from './components/ModifyIndex.vue'
+
   export default {
     components: {
       editindex
@@ -170,7 +186,7 @@
             }
           ]
         },
-        dataset: util.computer_room,
+        dataset: [],
         item: {},
         basename: [],
         sqlname: [],
@@ -210,7 +226,7 @@
             key: 'Extra'
           }
         ],
-        username: Cookies.get('user'),
+        username: sessionStorage.getItem('user'),
         indexinfo: [],
         sql: [],
         openswitch: false,
@@ -221,8 +237,9 @@
           connection_name: '',
           basename: '',
           tablename: '',
-          backup: 0,
-          assigned: ''
+          backup: '0',
+          assigned: '',
+          delay: 0
         },
         id: null,
         tabs: 'order1',
@@ -249,10 +266,7 @@
               this.tableform.basename = res.data
             })
             .catch(() => {
-              this.$Notice.error({
-                title: '警告',
-                desc: '无法连接数据库!请检查网络'
-              })
+              util.err_notice('无法连接数据库!请检查网络')
             })
         }
       },
@@ -273,7 +287,7 @@
             .then(res => {
               this.tableform.info = res.data
             }).catch(error => {
-            util.ajanxerrorcode(this, error)
+            util.err_notice(error)
           })
         }
       },
@@ -282,9 +296,10 @@
           .then(res => {
             this.item = res.data['connection']
             this.assigned = res.data['assigend']
+            this.dataset = res.data['custom']
           })
           .catch(error => {
-            util.ajanxerrorcode(this, error)
+            util.err_notice(error)
           })
       },
       getinfo () {
@@ -314,14 +329,11 @@
                 this.$Spin.hide()
               })
               .catch(() => {
-                this.$Notice.error({
-                  title: '警告',
-                  desc: '连接失败！详细信息请查看日志'
-                })
+                util.err_notice('连接失败！详细信息请查看日志')
               })
             this.getindex()
           } else {
-            this.$Message.error('表单验证失败!');
+            this.$Message.error('表单验证失败!')
           }
         })
       },
@@ -339,7 +351,7 @@
             .then(res => {
               this.indexinfo = res.data
             }).catch(error => {
-            util.ajanxerrorcode(this, error)
+            util.err_notice(error)
           })
         }
       },
@@ -353,35 +365,26 @@
       },
       commitorder () {
         if (this.sql === [] || this.formItem.basename === '' || this.assigned === '' || this.formItem.text === '' || this.formItem.assigned === '') {
-          this.$Notice.error({
-            title: '警告',
-            desc: '工单数据缺失,请检查工单信息是否缺失!'
-          })
+          util.err_notice('工单数据缺失,请检查工单信息是否缺失!')
         } else {
           if (this.pass === true) {
             axios.post(`${util.url}/sqlsyntax/`, {
               'data': JSON.stringify(this.formItem),
               'sql': JSON.stringify(this.sql),
-              'user': Cookies.get('user'),
+              'user': sessionStorage.getItem('user'),
               'type': 1,
               'id': this.id[0].id
             })
               .then(res => {
-                this.$Notice.success({
-                  title: '通知',
-                  desc: res.data
-                })
+                util.notice(res.data)
                 this.$router.push({
                   name: 'myorder'
                 })
               }).catch(error => {
-              util.ajanxerrorcode(this, error)
+              util.err_notice(error)
             })
           } else {
-            this.$Notice.warning({
-              title: '注意',
-              desc: '提交工单需点击确认按钮'
-            })
+            util.err_notice('提交工单需点击确认按钮')
           }
         }
       }

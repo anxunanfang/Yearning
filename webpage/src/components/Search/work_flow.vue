@@ -8,10 +8,10 @@
         </div>
         <p class="step-content"></p>
         <Row>
-        <i-col span="8">
-          <Alert type="warning" show-icon>
-            注意事项:
-            <span slot="desc">
+          <i-col span="8">
+            <Alert type="warning" show-icon>
+              注意事项:
+              <span slot="desc">
               1.必须填写查询说明
               <br>
               2.根据查询条件预估所需的查询时间
@@ -22,43 +22,51 @@
               <br>
               5.已限制最大limit数，如自己输入的limit数大于平台配置的最大limit数则已平台配置的Limit数为准
             </span>
-          </Alert>
-        </i-col>
-        <i-col span="12">
-          <Form ref="step" :model="step" :rules="stepRules" :label-width="150">
-            <FormItem label="机房:" prop="computer_room">
-              <Select v-model="step.computer_room" @on-change="Connection_Name">
-                <Option v-for="i in datalist.computer_roomlist" :key="i" :value="i" >{{i}}</Option>
-              </Select>
-            </FormItem>
+            </Alert>
+          </i-col>
+          <i-col span="12">
+            <Form ref="step" :model="step" :rules="stepRules" :label-width="150">
+              <FormItem label="机房:" prop="computer_room">
+                <Select v-model="step.computer_room" @on-change="Connection_Name">
+                  <Option v-for="i in datalist.computer_roomlist" :key="i" :value="i">{{i}}</Option>
+                </Select>
+              </FormItem>
 
-            <FormItem label="连接名:" prop="connection_name">
-              <Select v-model="step.connection_name" filterable>
-                <Option v-for="i in datalist.connection_name_list" :value="i.connection_name" :key="i.connection_name">{{ i.connection_name }}</Option>
-              </Select>
-            </FormItem>
-            <FormItem label="审核人:" prop="person">
-              <Select v-model="step.person" filterable>
-                <Option v-for="i in personlist" :value="i" :key="i">{{ i }}</Option>
-              </Select>
-            </FormItem>
-            <FormItem label="是否需要导出数据:" prop="export">
-              <RadioGroup v-model="step.export">
-                <Radio label="1">是</Radio>
-                <Radio label="0">否</Radio>
-              </RadioGroup>
-            </FormItem>
-            <FormItem label="查询说明：" prop="opinion">
-              <Input v-model="step.opinion" type="textarea" :autosize="{minRows: 4,maxRows: 8}" placeholder="请填写查询说明"/>
-            </FormItem>
-            <FormItem label="查询时限：" prop="timer">
-              <Input v-model="step.timer"  placeholder="请填写查询时限，单位：分钟 （只填写数字）"/>
-            </FormItem>
-            <FormItem label="">
-              <Button  @click="handleSubmit" style="width:100px;" type="primary">提交</Button>
-            </FormItem>
-          </Form>
-        </i-col>
+              <FormItem label="连接名:" prop="connection_name">
+                <Select v-model="step.connection_name" filterable>
+                  <Option v-for="i in datalist.connection_name_list" :value="i.connection_name"
+                          :key="i.connection_name">{{ i.connection_name }}
+                  </Option>
+                </Select>
+              </FormItem>
+              <FormItem label="审核人:" prop="person">
+                <Select v-model="step.person" filterable>
+                  <Option v-for="i in personlist" :value="i" :key="i">{{ i }}</Option>
+                </Select>
+              </FormItem>
+              <FormItem label="是否需要导出数据:" prop="export">
+                <RadioGroup v-model="step.export">
+                  <Radio label="1">是</Radio>
+                  <Radio label="0">否</Radio>
+                </RadioGroup>
+              </FormItem>
+              <FormItem label="查询说明：" prop="opinion">
+                <Input v-model="step.opinion" type="textarea" :autosize="{minRows: 4,maxRows: 8}"
+                       placeholder="请填写查询说明"/>
+              </FormItem>
+              <FormItem label="查询时限：">
+                <InputNumber
+                  v-model="step.timer"
+                  :formatter="value => `${value}分钟`"
+                  :parser="value => value.replace('分钟', '')"
+                  :min="1">
+                </InputNumber>
+              </FormItem>
+              <FormItem label="">
+                <Button @click="handleSubmit" style="width:100px;" type="primary">提交</Button>
+              </FormItem>
+            </Form>
+          </i-col>
         </Row>
         <Steps style="margin-left: 10%">
           <Step v-for="item in stepList1" :title="item.title" :content="item.describe" :key="item.title"></Step>
@@ -69,9 +77,10 @@
 </template>
 
 <script>
-  import Cookies from 'js-cookie'
+  //
   import axios from 'axios'
   import util from '../../libs/util'
+
   export default {
     name: 'work_flow',
     props: ['msg'],
@@ -79,11 +88,11 @@
       return {
         stepData: {
           title: 'Yearning SQL查询系统',
-          describe: `欢迎你！ ${Cookies.get('user')}`
+          describe: `欢迎你！ ${sessionStorage.getItem('user')}`
         },
         step: {
           remark: '',
-          timer: '',
+          timer: 1,
           computer_room: '',
           connection_name: '',
           person: '',
@@ -105,10 +114,7 @@
         ],
         stepRules: {
           opinion: [
-            { required: true, message: '请填写查询说明', trigger: 'blur' }
-          ],
-          timer: [
-            { required: true, message: '请填写查询时限', trigger: 'blur' }
+            {required: true, message: '请填写查询说明', trigger: 'blur'}
           ],
           computer_room: [{
             required: true,
@@ -133,7 +139,6 @@
         },
         item: {},
         personlist: [],
-        computer_roomlist: util.computer_room,
         datalist: {
           connection_name_list: [],
           basenamelist: [],
@@ -173,11 +178,11 @@
             })
               .then(() => {
                 this.$router.push({
-                    name: 'queryready'
-                  })
+                  name: 'queryready'
+                })
               })
           }
-        });
+        })
       }
     },
     mounted () {
@@ -185,20 +190,21 @@
         .then(res => {
           this.item = res.data['connection']
           this.personlist = res.data['assigend']
+          this.datalist.computer_roomlist = res.data['custom']
         })
         .catch(error => {
-          util.ajanxerrorcode(this, error)
+          util.err_notice(error)
         })
       axios.put(`${util.url}/query_worklf`, {'mode': 'status'})
         .then(res => {
           if (res.data === 1) {
             this.$router.push({
               name: 'querypage'
-            });
+            })
           } else if (res.data === 2) {
             this.$router.push({
               name: 'queryready'
-            });
+            })
           }
         })
     }
@@ -206,22 +212,22 @@
 </script>
 
 <style lang="less">
-  .step{
-    &-header-con{
+  .step {
+    &-header-con {
       text-align: center;
-      h3{
+      h3 {
         margin: 10px 0;
       }
-      h5{
+      h5 {
         margin: 0 0 5px;
       }
     }
-    &-content{
+    &-content {
       padding: 5px 20px 26px;
       margin-bottom: 20px;
       border-bottom: 1px solid #dbdddf;
     }
-    &-form{
+    &-form {
       padding-bottom: 10px;
       border-bottom: 1px solid #dbdddf;
       margin-bottom: 20px;
