@@ -10,6 +10,16 @@ export const loginRouter = {
     require(['./Login.vue'], resolve)
   }
 }
+export const version = {
+  path: '/version',
+  name: 'version',
+  meta: {
+    title: 'version - 版本号'
+  },
+  component: resolve => {
+    require(['./main_components/version.vue'], resolve)
+  }
+}
 export const locking = {
   path: '/locking',
   name: 'locking',
@@ -248,6 +258,15 @@ export const appRouter = [
         component: resolve => {
           require(['./components/Management/Setting.vue'], resolve)
         }
+      },
+      {
+        path: 'auth-group',
+        name: 'auth-group',
+        title: '权限组',
+        'icon': 'hammer',
+        component: resolve => {
+          require(['./components/Management/AuthGroup.vue'], resolve)
+        }
       }
     ]
   }
@@ -356,6 +375,7 @@ export const MainRoute = [
   queryList,
   queryready,
   querypage,
+  version,
   myorder,
   page404,
   page401,

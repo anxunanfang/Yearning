@@ -43,14 +43,16 @@ from core.api.myorder import order
 from core.api.gensql import gen_sql
 from core.api.general import addressing
 from core.api.setting import *
+from core.api.authgroup import *
 
 urlpatterns = [
+    url(r'^api/v1/authgroup/(.*)', auth_group.as_view()),
     url(r'^api/v1/setting/(.*)', setting_view.as_view()),
     url(r'^api/v1/query_order', Query_order.as_view()),
     url(r'^api/v1/query_worklf', query_worklf.as_view()),
     url(r'^api/v1/userinfo/(.*)', userinfo.as_view()),
     url(r'^api/v1/audit_grained/(.*)', audit_grained.as_view()),
-    url(r'^api/v1/apply_grained/(.*)', apply_grained.as_view()),
+    url(r'^api/v1/apply_grained', apply_grained.as_view()),
     url(r'^api/v1/workorder/(.*)', addressing.as_view()),
     url(r'^api/v1/myorder', order.as_view()),
     url(r'^api/v1/gensql/(.*)', gen_sql.as_view()),
