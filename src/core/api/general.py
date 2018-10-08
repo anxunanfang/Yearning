@@ -8,7 +8,6 @@ from core.task import grained_permissions, set_auth_group
 from core.models import (
     DatabaseList,
     Account,
-    grained,
     SqlDictionary
 )
 from libs.serializers import (
@@ -43,9 +42,9 @@ class addressing(baseview.BaseView):
 
                 elif request.data['permissions_type'] == 'query':
                     con_name = []
-                    permission_spec = grained.objects.filter(username=request.user).first()
-                    if permission_spec.permissions['query'] == '1':
-                        for i in permission_spec.permissions['querycon']:
+                    permission_spec = set_auth_group(request.user)
+                    if permission_spec['query'] == '1':
+                        for i in permission_spec['querycon']:
                             con_instance = DatabaseList.objects.filter(connection_name=i).first()
                             if con_instance:
                                 con_name.append(
@@ -61,8 +60,8 @@ class addressing(baseview.BaseView):
                 else:
                     con_name = []
                     _type = request.data['permissions_type'] + 'con'
-                    permission_spec = grained.objects.filter(username=request.user).first()
-                    for i in permission_spec.permissions[_type]:
+                    permission_spec = set_auth_group(request.user)
+                    for i in permission_spec[_type]:
                         con_instance = DatabaseList.objects.filter(connection_name=i).first()
                         if con_instance:
                             con_name.append(

@@ -4,8 +4,9 @@ import threading
 import ast
 from libs import baseview, send_email, util
 from django.http import HttpResponse
+from django.db import transaction
 from rest_framework.response import Response
-from core.models import Account, applygrained, grained, globalpermissions
+from core.models import Account, applygrained, globalpermissions
 
 CUSTOM_ERROR = logging.getLogger('Yearning.core.views')
 
@@ -38,14 +39,13 @@ class audit_grained(baseview.SuperUserpermissions):
         if request.data['status'] == 0:
             try:
                 auth_group = request.data['auth_group']
-                grained_list = json.loads(request.data['grained_list'])
             except KeyError as e:
                 CUSTOM_ERROR.error(f'{e.__class__.__name__}: {e}')
                 return HttpResponse(status=500)
             else:
-                Account.objects.filter(username=user).update(auth_group=auth_group)
-                grained.objects.filter(username=user).update(permissions=grained_list)
-                applygrained.objects.filter(work_id=work_id).update(status=1)
+                with transaction.atomic():
+                    Account.objects.filter(username=user).update(auth_group=auth_group)
+                    applygrained.objects.filter(work_id=work_id).update(status=1)
                 mail = Account.objects.filter(username=user).first()
                 thread = threading.Thread(target=push_message, args=(
                     {'to_user': user, 'workid': work_id}, 3, user, mail.email, work_id, '同意'))
@@ -96,7 +96,7 @@ def push_message(message=None, type=None, user=None, to_addr=None, work_id=None,
     try:
         tag = globalpermissions.objects.filter(authorization='global').first()
         if tag.message['mail']:
-            put_mess = send_email.send_email(to_addr=to_addr)
+            put_mess = send_email.send_email(to_addr=to_addr, ssl=tag.message['ssl'])
             put_mess.send_mail(mail_data=message, type=type)
     except Exception as e:
         CUSTOM_ERROR.error(f'{e.__class__.__name__}: {e}')
